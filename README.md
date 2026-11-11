@@ -10,3 +10,5 @@ p3traj.github.io/NAKIHranice/rauchberg1904_iiif.html
 p3traj.github.io/NAKIHranice/zeleznicni1904_iiif.html
 
 p3traj.github.io/NAKIHranice/raffelsperger1850_iiif.html
+
+p3traj.github.io/NAKIHranice/hickmann1899_zoomify.html
