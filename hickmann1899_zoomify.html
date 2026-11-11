@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Hickmann (1899)</title>
+  <meta name="description" content="Interaktivní prohlížení digitalizované verze mapy. © Mapová sbírka Historického ústavu AV ČR">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Hickmann (1899)">
+  <meta property="og:description" content="Interaktivní prohlížení digitalizované verze mapy">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Hickmann (1899)">
+  <meta name="twitter:description" content="Interaktivní prohlížení digitalizované verze mapy">
+  <style>
+    :root { color-scheme: dark; --bg:#181a1d; --fg:#eef0f2; --muted:#b5bdc8; }
+    * { box-sizing:border-box; }
+    html,body { width:100%; height:100%; margin:0; overflow:hidden; background:var(--bg); font:14px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    #viewer { position:absolute; inset:0; background:var(--bg); touch-action:none; }
+    .tools { position:absolute; right:12px; top:12px; display:flex; flex-direction:column; gap:6px; z-index:5; }
+    .tools button { width:39px; height:39px; border:1px solid #ffffff35; background:#17191bdc; color:#fff; border-radius:8px; font-size:22px; cursor:pointer; line-height:1; }
+    .tools button:focus-visible, .action:focus-visible { outline:2px solid #a9c6ff; outline-offset:3px; }
+    .tools button:hover { background:#32363a; }
+    .tools button:disabled { opacity:.35; cursor:default; }
+    .tools button.reset { font-size:19px; }
+    .credit { position:absolute; bottom:8px; left:9px; right:9px; z-index:4; display:flex; justify-content:space-between; gap:10px; align-items:end; pointer-events:none; font-size:11px; color:#fff; text-shadow:0 1px 4px #000,0 1px 10px #000; }
+    .credit a { color:#fff; pointer-events:auto; text-decoration:underline; text-underline-offset:2px; }
+    .credit span { min-width:0; }
+    #notice { position:absolute; z-index:10; inset:0; display:flex; align-items:center; justify-content:center; background:#181a1df0; padding:18px; }
+    #notice[hidden] { display:none; }
+    .panel { width:min(100%,560px); max-height:calc(100vh - 36px); overflow:auto; border:1px solid #ffffff2b; border-radius:12px; background:#25282d; padding:23px; color:var(--fg); box-shadow:0 12px 55px #0009; }
+    .panel h1 { font-size:19px; margin:0 0 9px; line-height:1.25; }
+    .panel p { margin:0 0 12px; color:var(--muted); }
+    .panel a { color:#b5d1ff; }
+    .fields { display:flex; gap:8px; flex-wrap:wrap; align-items:end; margin:13px 0; }
+    .fields label { flex:1 1 105px; min-width:100px; font-size:12px; color:var(--muted); }
+    .fields input { width:100%; display:block; margin-top:5px; padding:10px; border-radius:6px; border:1px solid #66707b; background:#16181b; color:white; font:inherit; }
+    .action { padding:10px 16px; border:0; border-radius:7px; background:#e3edf9; color:#192129; font-weight:650; cursor:pointer; }
+    .small { font-size:12px; }
+    @media (max-width:460px) { .credit { font-size:9px; }.tools { right:8px;top:8px; }.panel { padding:17px; } }
+  </style>
+</head>
+<body>
+  <main id="viewer" aria-label="Interaktivní prohlížeč historické mapy"></main>
+  <nav class="tools" aria-label="Ovládání mapy">
+    <button id="zoomIn" title="Přiblížit" aria-label="Přiblížit" disabled>+</button>
+    <button id="zoomOut" title="Oddálit" aria-label="Oddálit" disabled>−</button>
+    <button id="home" class="reset" title="Zobrazit celou mapu" aria-label="Zobrazit celou mapu" disabled>⌂</button>
+  </nav>
+  <div class="credit">
+    <span>Anton L. Hickmann, 1898 · Historický ústav AV ČR</span>
+    <span>Digitalizace: <a href="https://chartae-antiquae.cz/cs/maps/82955/" target="_blank" rel="noopener noreferrer">Chartae Antiquae / VÚGTK</a></span>
+  </div>
+  <section id="notice" role="status" aria-live="polite">
+    <div class="panel">
+      <h1 id="noticeTitle">Načítám historickou mapu…</h1>
+      <p id="noticeDescription">Zjišťuji rozměry snímku ze Zoomify metadat.</p>
+      <div id="manual" hidden>
+        <p>Server může blokovat automatické čtení souboru <code>ImageProperties.xml</code> (CORS). Otevři <a id="xmlLink" target="_blank" rel="noopener noreferrer">metadata skenu</a>, vyhledej hodnoty <code>WIDTH</code> a <code>HEIGHT</code> a zadej je níže.</p>
+        <form id="dimensionsForm">
+          <div class="fields">
+            <label>WIDTH (px)<input id="width" type="number" min="1" step="1" required placeholder="např. 7000"></label>
+            <label>HEIGHT (px)<input id="height" type="number" min="1" step="1" required placeholder="např. 5000"></label>
+            <button class="action" type="submit">Zobrazit mapu</button>
+          </div>
+        </form>
+        <p class="small">Pro publikaci všem návštěvníkům: přidej do stejné složky GitHub Pages soubor <code>zoomify_82955.xml</code> (kopie uvedených metadat), nebo do HTML vyplň konstanty <code>FALLBACK_WIDTH</code> a <code>FALLBACK_HEIGHT</code>. Rozměry lze též zadat pomocí parametrů URL <code>?width=…&amp;height=…</code>.</p>
+        <p class="small"><a href="https://chartae-antiquae.cz/cs/maps/82955/" target="_blank" rel="noopener noreferrer">Otevřít původní mapu na Chartae Antiquae</a></p>
+      </div>
+    </div>
+  </section>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/openseadragon/5.0.1/openseadragon.min.js"></script>
+  <script>
+    // Adresa Zoomify dlaždic z odkazu „Georeference map“ na Chartae Antiquae.
+    const ZOOMIFY_BASE = 'https://www.chartae-antiquae.cz/tiles/huav/MSHU-MAP-A-2454/';
+    // Volitelná trvalá záloha: vyplň přesné rozměry z ImageProperties.xml.
+    const FALLBACK_WIDTH = 0;
+    const FALLBACK_HEIGHT = 0;
+    const XML_NAME = 'zoomify_82955.xml';
+    const notice = document.getElementById('notice');
+    const title = document.getElementById('noticeTitle');
+    const description = document.getElementById('noticeDescription');
+    const manual = document.getElementById('manual');
+    const xmlUrl = ZOOMIFY_BASE + 'ImageProperties.xml';
+    document.getElementById('xmlLink').href = xmlUrl;
+    let viewer = null;
+
+    function parseDimensions(xml) {
+      const d = new DOMParser().parseFromString(xml, 'application/xml');
+      const el = d.querySelector('IMAGE_PROPERTIES');
+      if (!el) throw new Error('V XML nejsou prvky IMAGE_PROPERTIES.');
+      const width = Number(el.getAttribute('WIDTH'));
+      const height = Number(el.getAttribute('HEIGHT'));
+      const tileSize = Number(el.getAttribute('TILESIZE')) || 256;
+      if (![width,height,tileSize].every(Number.isSafeInteger) || width <= 0 || height <= 0 || tileSize <= 0) throw new Error('Chybné rozměry v XML.');
+      return {width,height,tileSize};
+    }
+    async function getXml(url) {
+      const r = await fetch(url, {mode:'cors', cache:'default'});
+      if (!r.ok) throw new Error('HTTP '+r.status);
+      return parseDimensions(await r.text());
+    }
+    function showManual(detail) {
+      title.textContent = 'Mapa je připravena, chybí rozměry snímku';
+      description.textContent = detail || 'Nepodařilo se automaticky načíst metadata Zoomify.';
+      manual.hidden = false;
+      notice.hidden = false;
+    }
+    function startViewer(dim) {
+      if (!window.OpenSeadragon) {
+        title.textContent = 'Nelze načíst knihovnu prohlížeče';
+        description.textContent = 'Zkontroluj připojení k internetu nebo dostupnost CDN OpenSeadragon.';
+        manual.hidden = true; notice.hidden = false; return;
+      }
+      const {width,height,tileSize=256} = dim;
+      if (![width,height,tileSize].every(Number.isFinite) || width < 1 || height < 1) {
+        showManual('Zadané rozměry nejsou platné.'); return;
+      }
+      if (viewer) viewer.destroy();
+      viewer = OpenSeadragon({
+        id:'viewer',
+        tileSources:[{type:'zoomifytileservice',width,height,tileSize,tilesUrl:ZOOMIFY_BASE,fileFormat:'jpg'}],
+        showNavigationControl:false,
+        showNavigator:false,
+        showRotationControl:false,
+        showFullPageControl:false,
+        background:'#181a1d',
+        visibilityRatio:0.65,
+        constrainDuringPan:true,
+        minZoomImageRatio:0.8,
+        maxZoomPixelRatio:2,
+        zoomPerScroll:1.2,
+        zoomPerClick:1.65,
+        gestureSettingsTouch:{pinchToZoom:true,flickEnabled:true},
+        crossOriginPolicy:false,
+        loadTilesWithAjax:false,
+        drawer:'canvas'
+      });
+      viewer.addHandler('open', () => {
+        notice.hidden = true;
+        document.querySelectorAll('.tools button').forEach(b=>b.disabled=false);
+      });
+      viewer.addHandler('open-failed', () => {
+        title.textContent='Nepodařilo se otevřít dlaždice mapy';
+        description.textContent='Zkontroluj dostupnost zdrojových dlaždic nebo omezení externího načítání.';
+        manual.hidden=false; notice.hidden=false;
+      });
+      let failures = 0;
+      viewer.addHandler('tile-load-failed', () => {
+        if (++failures > 8) {
+          title.textContent='Zdrojové dlaždice se nenačítají';
+          description.textContent='Server může omezovat načítání z cizích domén nebo je nedostupný.';
+          manual.hidden=false; notice.hidden=false;
+        }
+      });
+    }
+    document.getElementById('zoomIn').addEventListener('click', () => viewer?.viewport?.zoomBy(1.35));
+    document.getElementById('zoomOut').addEventListener('click', () => viewer?.viewport?.zoomBy(1/1.35));
+    document.getElementById('home').addEventListener('click', () => viewer?.viewport?.goHome());
+    document.getElementById('dimensionsForm').addEventListener('submit', e => {
+      e.preventDefault();
+      const width=Number(document.getElementById('width').value);
+      const height=Number(document.getElementById('height').value);
+      startViewer({width,height,tileSize:256});
+    });
+    (async () => {
+      const query = new URLSearchParams(location.search);
+      const width=Number(query.get('width')) || FALLBACK_WIDTH;
+      const height=Number(query.get('height')) || FALLBACK_HEIGHT;
+      if (width>0 && height>0) {startViewer({width,height}); return;}
+      for (const url of [XML_NAME,xmlUrl]) {
+        try { startViewer(await getXml(url)); return; } catch (e) { /* another route follows */ }
+      }
+      showManual('Na stránce se nepodařilo načíst ImageProperties.xml. Pokud jej v prohlížeči otevřeš, můžeš zde zadat jeho hodnoty WIDTH a HEIGHT.');
+    })();
+  </script>
+</body>
+</html>
