@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="light">
+  <title>Historická mapa 2 | IIIF prohlížeč</title>
+  <style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+html, body { width: 100%; height: 100%; margin: 0; overflow: hidden; }
+body { background: #eeeae4; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Arial, sans-serif; }
+#viewer { position: absolute; inset: 0; width: 100%; height: 100%; }
+.controls { position: absolute; z-index: 5; right: 14px; bottom: 14px; display: flex; gap: 5px;
+  padding: 5px; border: 1px solid #ccc9c2; background: rgba(255,255,255,.95);
+  border-radius: 9px; box-shadow: 0 2px 12px #0002; }
+.controls button { font: 600 22px/1 system-ui, sans-serif; width: 39px; height: 39px;
+  border: none; border-radius: 6px; background: transparent; color: #222; cursor: pointer; }
+.controls button:hover, .controls button:focus-visible { background: #eceae6; }
+.controls button:focus-visible { outline: 2px solid #176bb4; outline-offset: -2px; }
+.controls #reset { font-size: 19px; }
+.attribution { position: absolute; left: 14px; bottom: 14px; z-index: 5;
+  background: rgba(255,255,255,.88); padding: 6px 9px; border-radius: 6px; 
+  color: #414141; font-size: 11px; line-height: 1.45; max-width: 55%; }
+.attribution a { color: inherit; }
+.status { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+  max-width: min(90vw,520px); z-index: 6; padding: 15px 18px;
+  background: rgba(255,255,255,.97); color: #292929; text-align: center;
+  border: 1px solid #ddd; border-radius: 9px; box-shadow: 0 3px 20px #0001;
+  font-size: 14px; line-height: 1.55; }
+.status[hidden] { display: none; }
+.status a { color: #095d9e; }
+@media (max-width: 550px) {
+  .controls { right: 8px; bottom: 8px; }
+  .controls button { width: 35px; height: 35px; }
+  .attribution { left: 8px; bottom: 8px; padding: 4px 6px; max-width: 55%; font-size: 10px; }
+}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/openseadragon@6.1.1/build/openseadragon/openseadragon.min.js"></script>
+</head>
+<body>
+  <main id="viewer" aria-label="Interaktivní historická mapa: přibližování a posouvání"></main>
+  <div class="status" id="status" role="status">Načítám mapu…</div>
+  <div class="controls" role="group" aria-label="Ovládání mapy">
+    <button id="zoom-in" type="button" title="Přiblížit" aria-label="Přiblížit">+</button>
+    <button id="zoom-out" type="button" title="Oddálit" aria-label="Oddálit">−</button>
+    <button id="reset" type="button" title="Zobrazit celou mapu" aria-label="Zobrazit celou mapu">⌂</button>
+  </div>
+  <div class="attribution">Zdroj: <a href="https://www.digitalniknihovna.cz/cuni/view/uuid:ac37c5ee-4d4a-11ec-b991-fa163e4ea95f?page=uuid:acfa161c-4d4a-11ec-b991-fa163e4ea95f" target="_blank" rel="noopener noreferrer">Digitální knihovna Univerzity Karlovy</a></div>
+  <script>
+'use strict';
+const iiifInfoUrl = "https://kramerius.cuni.cz/search/iiif/uuid:acfa161c-4d4a-11ec-b991-fa163e4ea95f/info.json";
+const originalUrl = "https://www.digitalniknihovna.cz/cuni/view/uuid:ac37c5ee-4d4a-11ec-b991-fa163e4ea95f?page=uuid:acfa161c-4d4a-11ec-b991-fa163e4ea95f";
+const statusBox = document.getElementById('status');
+
+function errorMessage(message) {
+  statusBox.hidden = false;
+  statusBox.replaceChildren();
+  statusBox.append(document.createTextNode(message + ' '));
+  const iiifLink = document.createElement('a');
+  iiifLink.href = iiifInfoUrl;
+  iiifLink.target = '_blank';
+  iiifLink.rel = 'noopener noreferrer';
+  iiifLink.textContent = 'Zkontrolovat IIIF';
+  const originalLink = document.createElement('a');
+  originalLink.href = originalUrl;
+  originalLink.target = '_blank';
+  originalLink.rel = 'noopener noreferrer';
+  originalLink.textContent = 'Otevřít původní záznam';
+  statusBox.append(iiifLink, document.createTextNode(' · '), originalLink);
+}
+
+if (typeof OpenSeadragon === 'undefined') {
+  errorMessage('Nepodařilo se načíst knihovnu prohlížeče.');
+} else {
+  const viewer = OpenSeadragon({
+    id: 'viewer',
+    tileSources: iiifInfoUrl,
+    showNavigationControl: false,
+    showNavigator: false,
+    showSequenceControl: false,
+    preserveViewport: false,
+    animationTime: 0.55,
+    blendTime: 0.12,
+    visibilityRatio: 0.8,
+    constrainDuringPan: true,
+    minZoomImageRatio: 0.85,
+    maxZoomPixelRatio: 3.5,
+    homeFillsViewer: false,
+    gestureSettingsMouse: {
+      scrollToZoom: true,
+      clickToZoom: false,
+      dblClickToZoom: true,
+      dragToPan: true
+    },
+    gestureSettingsTouch: {
+      pinchToZoom: true,
+      dragToPan: true,
+      flickEnabled: true,
+      dblClickToZoom: true
+    }
+  });
+  viewer.addHandler('open', () => { statusBox.hidden = true; });
+  viewer.addHandler('open-failed', (event) => {
+    console.error('Chyba načtení IIIF:', event);
+    errorMessage('Sken nelze načíst. Služba IIIF může být nedostupná nebo blokovat přístup z jiného webu (CORS).');
+  });
+  let loadFailures = 0;
+  viewer.addHandler('tile-load-failed', () => {
+    loadFailures += 1;
+    if (loadFailures === 5) {
+      errorMessage('Mapové dlaždice se nenačítají. Zkontrolujte dostupnost služby IIIF.');
+    }
+  });
+  viewer.addHandler('tile-loaded', () => {
+    loadFailures = 0;
+    statusBox.hidden = true;
+  });
+
+  function moveViewport(fn) {
+    if (!viewer.viewport || !viewer.world || !viewer.world.getItemCount()) return;
+    fn();
+    viewer.viewport.applyConstraints();
+  }
+  document.getElementById('zoom-in').addEventListener('click', () =>
+    moveViewport(() => viewer.viewport.zoomBy(1.6)));
+  document.getElementById('zoom-out').addEventListener('click', () =>
+    moveViewport(() => viewer.viewport.zoomBy(1 / 1.6)));
+  document.getElementById('reset').addEventListener('click', () =>
+    moveViewport(() => viewer.viewport.goHome()));
+}
+  </script>
+</body>
+</html>
